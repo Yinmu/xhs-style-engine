@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小红书风格引擎</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif; background: #faf5f0; color: #333; min-height: 100vh; }
+.container { max-width: 640px; margin: 0 auto; padding: 20px; }
+.header { text-align: center; padding: 30px 0 20px; }
+.header h1 { font-size: 28px; color: #ff4757; margin-bottom: 8px; }
+.header p { color: #888; font-size: 14px; }
+.steps { display: flex; justify-content: center; gap: 8px; margin: 20px 0 30px; }
+.step-dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; transition: all 0.3s; }
+.step-dot.active { background: #ff4757; transform: scale(1.3); }
+.step-dot.done { background: #ff6b81; }
+.card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.card h2 { font-size: 18px; margin-bottom: 16px; color: #333; }
+.card h3 { font-size: 15px; margin-bottom: 12px; color: #555; }
+.question { margin-bottom: 24px; }
+.question-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #333; }
+.question-subtitle { font-size: 13px; color: #999; margin-bottom: 8px; }
+.options { display: flex; flex-wrap: wrap; gap: 8px; }
+.option-btn { padding: 8px 16px; border: 2px solid #eee; border-radius: 20px; background: #fff; cursor: pointer; font-size: 14px; transition: all 0.2s; user-select: none; }
+.option-btn:hover { border-color: #ffb8c0; background: #fff5f5; }
+.option-btn.selected { border-color: #ff4757; background: #fff0f0; color: #ff4757; font-weight: 600; }
+.ab-pair { margin-bottom: 16px; }
+.ab-options { display: flex; flex-direction: column; gap: 8px; }
+.ab-btn { padding: 12px 16px; border: 2px solid #eee; border-radius: 12px; background: #fff; cursor: pointer; font-size: 14px; line-height: 1.5; transition: all 0.2s; text-align: left; }
+.ab-btn:hover { border-color: #ffb8c0; }
+.ab-btn.selected { border-color: #ff4757; background: #fff0f0; }
+.ab-tag { display: inline-block; font-size: 12px; color: #ff4757; background: #fff0f0; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
+textarea, input[type="text"] { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 12px; font-size: 14px; font-family: inherit; resize: vertical; transition: border-color 0.2s; }
+textarea:focus, input[type="text"]:focus { outline: none; border-color: #ff4757; }
+textarea { min-height: 100px; }
+.btn { display: inline-block; padding: 12px 32px; border: none; border-radius: 24px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: #ff4757; color: #fff; }
+.btn-primary:hover { background: #ff3344; transform: translateY(-1px); }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+.btn-secondary { background: #fff; color: #ff4757; border: 2px solid #ff4757; }
+.btn-secondary:hover { background: #fff0f0; }
+.btn-group { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
+.skill-card { background: linear-gradient(135deg, #fff0f0, #fff5f0); border-radius: 16px; padding: 20px; margin: 16px 0; }
+.skill-section { margin-bottom: 12px; }
+.skill-label { font-size: 12px; color: #ff4757; font-weight: 600; margin-bottom: 4px; }
+.skill-value { font-size: 14px; color: #555; line-height: 1.6; }
+.skill-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.skill-tag { background: #ff4757; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 12px; }
+.rule-do { color: #27ae60; }
+.rule-dont { color: #e74c3c; }
+.gen-input { margin-bottom: 16px; }
+.gen-input label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #555; }
+.note-types { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.note-type-btn { padding: 6px 14px; border: 2px solid #eee; border-radius: 16px; background: #fff; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.note-type-btn.selected { border-color: #ff4757; background: #fff0f0; color: #ff4757; }
+.result-card { background: #fff; border-radius: 16px; padding: 20px; margin-top: 16px; border: 2px solid #ff4757; }
+.result-title { font-size: 16px; font-weight: 700; color: #ff4757; margin-bottom: 4px; cursor: pointer; padding: 8px; border-radius: 8px; transition: background 0.2s; }
+.result-title:hover { background: #fff0f0; }
+.result-title.selected { background: #fff0f0; }
+.result-body { font-size: 15px; line-height: 1.8; color: #333; white-space: pre-wrap; margin: 16px 0; padding: 16px; background: #faf5f0; border-radius: 12px; }
+.result-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.result-tag { color: #ff4757; font-size: 13px; }
+.loading { text-align: center; padding: 40px; }
+.loading-spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid #eee; border-top-color: #ff4757; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { margin-top: 12px; color: #888; font-size: 14px; }
+.section { display: none; }
+.section.active { display: block; }
+.copy-btn { padding: 6px 16px; border: 1px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer; font-size: 13px; color: #666; transition: all 0.2s; }
+.copy-btn:hover { border-color: #ff4757; color: #ff4757; }
+.copy-btn.copied { background: #ff4757; color: #fff; border-color: #ff4757; }
+@media (max-width: 480px) { .container { padding: 12px; } .card { padding: 16px; } .header h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📝 小红书风格引擎</h1>
+    <p>AI写文案，用你的风格，去掉AI味</p>
+  </div>
+  <div class="steps">
+    <div class="step-dot active" id="dot-0"></div>
+    <div class="step-dot" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+  </div>
+
+  <div class="section active" id="section-questionnaire">
+    <div class="card">
+      <h2>🎯 第一步：告诉我你是谁</h2>
+      <p style="color:#888;font-size:13px;margin-bottom:20px;">回答几个问题，AI就能学会你的写作风格</p>
+      <div id="questions-container"></div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-distill" onclick="submitQuestionnaire()">✨ 生成我的风格档案</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="section-skill">
+    <div class="card">
+      <h2>🧬 你的风格DNA</h2>
+      <div id="skill-display"></div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="goToStep(0)">← 重新填写</button>
+        <button class="btn btn-primary" onclick="goToStep(2)">开始写文案 →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="section-generate">
+    <div class="card">
+      <h2>✍️ 写一篇小红书</h2>
+      <div class="gen-input">
+        <label>主题/关键词</label>
+        <input type="text" id="input-topic" placeholder="比如：今天去了苏州平江路、推荐一款平价面霜、在家做韩式拌饭…">
+      </div>
+      <div class="gen-input">
+        <label>笔记类型</label>
+        <div class="note-types" id="note-types">
+          <div class="note-type-btn selected" data-type="daily">📖 日常分享</div>
+          <div class="note-type-btn" data-type="recommend">💕 种草推荐</div>
+          <div class="note-type-btn" data-type="tutorial">📚 教程干货</div>
+          <div class="note-type-btn" data-type="review">🔍 测评对比</div>
+          <div class="note-type-btn" data-type="story">📝 故事经历</div>
+        </div>
+      </div>
+      <div class="gen-input">
+        <label>补充素材（可选）</label>
+        <textarea id="input-material" rows="3" placeholder="粘贴一段语音转文字、笔记、或者任何想融入文案的素材…"></textarea>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="goToStep(1)">← 查看风格</button>
+        <button class="btn btn-primary" id="btn-generate" onclick="generatePost()">🚀 生成文案</button>
+      </div>
+    </div>
+    <div id="result-container"></div>
+  </div>
+
+  <div id="loading" style="display:none;">
+    <div class="card">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loading-text">正在分析你的风格DNA…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentStep=0,currentSkillId=null,currentSkill=null,selectedNoteType='daily',answers={};
+
+async function init(){const r=await fetch('/api/questions');const d=await r.json();renderQuestions([...d.basic,...d.advanced]);setupNoteTypes();}
+
+function renderQuestions(questions){const c=document.getElementById('questions-container');c.innerHTML='';questions.forEach((q,idx)=>{const div=document.createElement('div');div.className='question';if(idx===5){const d=document.createElement('div');d.innerHTML='<h3 style="color:#ff4757;margin:20px 0 16px;padding-top:16px;border-top:2px dashed #ffe0e0;">🔮 进阶问题（让风格更精准）</h3>';c.appendChild(d);}let h=`<div class="question-title">${q.question}</div>`;if(q.type==='single_choice'){h+='<div class="options">';q.options.forEach(o=>{h+=`<div class="option-btn" data-qid="${q.id}" data-value="${o.value}" onclick="selectOption(this,'${q.id}','${o.value}',false)">${o.label}</div>`;});h+='</div>';}else if(q.type==='multi_choice'){h+=`<div class="question-subtitle">最多选${q.max_select}个</div><div class="options">`;q.options.forEach(o=>{h+=`<div class="option-btn" data-qid="${q.id}" data-value="${o.value}" onclick="selectOption(this,'${q.id}','${o.value}',true,${q.max_select})">${o.label}</div>`;});h+='</div>';}else if(q.type==='ab_choice'){q.pairs.forEach((p,pi)=>{h+=`<div class="ab-pair"><div class="ab-options"><div class="ab-btn" onclick="selectAB(this,'${q.id}',${pi},'a')">${p.a}<br><span class="ab-tag">${p.a_tag}</span></div><div class="ab-btn" onclick="selectAB(this,'${q.id}',${pi},'b')">${p.b}<br><span class="ab-tag">${p.b_tag}</span></div></div></div>`;});}else if(q.type==='text_input'){h+=`<input type="text" id="input-${q.id}" placeholder="${q.placeholder||''}" oninput="answers['${q.id}']=this.value">`;}else if(q.type==='long_text'){h+=`<textarea id="input-${q.id}" placeholder="${q.placeholder||''}" rows="5" oninput="answers['${q.id}']=this.value"></textarea>`;}div.innerHTML=h;c.appendChild(div);});}
+
+function selectOption(el,qid,value,multi,maxSelect){if(multi){if(!answers[qid])answers[qid]=[];if(el.classList.contains('selected')){el.classList.remove('selected');answers[qid]=answers[qid].filter(v=>v!==value);}else{if(answers[qid].length>=maxSelect)return;el.classList.add('selected');answers[qid].push(value);}}else{document.querySelectorAll(`[data-qid="${qid}"]`).forEach(b=>b.classList.remove('selected'));el.classList.add('selected');answers[qid]=value;}}
+
+function selectAB(el,qid,pi,choice){const p=el.parentElement;p.querySelectorAll('.ab-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');if(!answers[qid])answers[qid]={};answers[qid][pi]=choice;}
+
+async function submitQuestionnaire(){const btn=document.getElementById('btn-distill');btn.disabled=true;showLoading('正在分析你的风格DNA…');try{const r=await fetch('/api/distill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(answers)});const d=await r.json();if(d.error){alert(d.error);return;}currentSkillId=d.skill_id;currentSkill=d.skill;renderSkill(d.skill);goToStep(1);}catch(e){alert('网络错误: '+e.message);}finally{btn.disabled=false;hideLoading();}}
+
+function renderSkill(skill){const el=document.getElementById('skill-display');const p=skill.persona||{},v=skill.voice||{},r=skill.writing_rules||{},samples=skill.sample_phrases||[];let h='<div class="skill-card">';h+=`<div class="skill-section"><div class="skill-label">👤 人设</div><div class="skill-value">${p.identity||''}</div><div class="skill-tags" style="margin-top:6px;">${(p.personality_tags||[]).map(t=>`<span class="skill-tag">${t}</span>`).join('')}</div></div>`;h+=`<div class="skill-section"><div class="skill-label">🗣️ 语言特征</div><div class="skill-value"><strong>语调：</strong>${v.tone||''}<br><strong>句式：</strong>${v.sentence_style||''}<br><strong>emoji：</strong>${v.emoji_pattern||''}<br><strong>口头禅：</strong>${(v.catchphrases||[]).join('、')}</div></div>`;if(r.do||r.dont){h+='<div class="skill-section"><div class="skill-label">📋 写作规则</div><div class="skill-value">';(r.do||[]).forEach(i=>{h+=`<div class="rule-do">✓ ${i}</div>`;});(r.dont||[]).forEach(i=>{h+=`<div class="rule-dont">✗ ${i}</div>`;});h+='</div></div>';}if(samples.length){h+='<div class="skill-section"><div class="skill-label">💬 你会说的话</div><div class="skill-value">';samples.forEach(s=>{h+=`<div style="margin-bottom:4px;">「${s}」</div>`;});h+='</div></div>';}h+='</div>';el.innerHTML=h;}
+
+async function generatePost(){const topic=document.getElementById('input-topic').value.trim();if(!topic){alert('请输入主题');return;}const btn=document.getElementById('btn-generate');btn.disabled=true;showLoading('正在用你的风格写文案…');try{const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic,note_type:selectedNoteType,extra_material:document.getElementById('input-material').value,skill_id:currentSkillId})});const d=await r.json();if(d.error){alert(d.error);return;}renderResult(d);}catch(e){alert('网络错误: '+e.message);}finally{btn.disabled=false;hideLoading();}}
+
+function renderResult(data){const c=document.getElementById('result-container');let h='<div class="result-card"><div style="margin-bottom:12px;"><div class="skill-label">📌 备选标题（点击选择）</div>';data.titles.forEach(t=>{h+=`<div class="result-title" onclick="selectTitle(this)">${t}</div>`;});h+=`</div><div class="skill-label">📝 正文</div><div class="result-body" id="result-body">${data.body}</div>`;if(data.tags&&data.tags.length){h+='<div class="result-tags">';data.tags.forEach(t=>{h+=`<span class="result-tag">${t}</span> `;});h+='</div>';}h+=`<div class="btn-group" style="margin-top:16px;"><button class="copy-btn" onclick="copyResult(this)">📋 一键复制</button><button class="btn btn-primary" onclick="generatePost()">🔄 再生成一篇</button></div></div>`;c.innerHTML=h;c.scrollIntoView({behavior:'smooth'});}
+
+function selectTitle(el){document.querySelectorAll('.result-title').forEach(t=>t.classList.remove('selected'));el.classList.add('selected');}
+
+function copyResult(btn){const st=document.querySelector('.result-title.selected');const title=st?st.textContent:document.querySelector('.result-title').textContent;const body=document.getElementById('result-body').textContent;const tags=[...document.querySelectorAll('.result-tag')].map(t=>t.textContent).join(' ');navigator.clipboard.writeText(`${title}\n\n${body}\n\n${tags}`).then(()=>{btn.textContent='✅ 已复制';btn.classList.add('copied');setTimeout(()=>{btn.textContent='📋 一键复制';btn.classList.remove('copied');},2000);});}
+
+function goToStep(step){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById(['section-questionnaire','section-skill','section-generate'][step]).classList.add('active');document.querySelectorAll('.step-dot').forEach((d,i)=>{d.classList.remove('active','done');if(i===step)d.classList.add('active');else if(i<step)d.classList.add('done');});currentStep=step;window.scrollTo({top:0,behavior:'smooth'});}
+
+function setupNoteTypes(){document.querySelectorAll('.note-type-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.note-type-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');selectedNoteType=btn.dataset.type;});});}
+
+function showLoading(text){document.getElementById('loading-text').textContent=text;document.getElementById('loading').style.display='block';}
+function hideLoading(){document.getElementById('loading').style.display='none';}
+
+init();
+</script>
+</body>
+</html>
